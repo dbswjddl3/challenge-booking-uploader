@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import Dropzone from 'react-dropzone';
 import Timeline from 'react-calendar-timeline'
 import moment from 'moment'
+import "react-calendar-timeline/lib/Timeline.css";
 import './App.css';
 
 const apiUrl = 'http://localhost:3001'
@@ -10,6 +11,12 @@ class App extends Component {
 
   state = {}
 
+  groups = [
+    {id: 1, title: '0001'},
+    {id: 2, title: '0002'},
+    {id: 3, title: '0003'},
+  ]
+  
   componentWillMount() {
     fetch(`${apiUrl}/bookings`)
       .then((response) => response.json())
@@ -64,6 +71,24 @@ class App extends Component {
         </div>
         <div className="App-main">
           <p>Existing bookings:</p>
+          <div>
+            <Timeline groups={this.groups}
+              items={
+                (this.state.bookings || []).map((booking, i) => {
+                  const duration = booking.duration / (60 * 1000);
+                  return ({
+                    id: i, 
+                    group: parseInt(booking.userId), 
+                    title: 'User ' + booking.userId + ' - ' + duration + ' Minutes' , 
+                    start_time: moment(booking.time), 
+                    end_time: moment(booking.time).add(booking.duration / (60 * 1000), 'minute')
+                  })
+                })
+              }
+              defaultTimeStart={moment('01 Mar 2018 11:00:00 GMT+1000')}
+              defaultTimeEnd={moment('06 Mar 2018 11:00:00 GMT+1000')}
+            />
+          </div>
           {
             (this.state.bookings || []).map((booking, i) => {
               const date = new Date(booking.time);
