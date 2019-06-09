@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
 import Dropzone from 'react-dropzone';
-import "react-calendar-timeline/lib/Timeline.css";
-import './App.css';
-import Timeline from 'react-calendar-timeline'
+import BigCalendar from 'react-big-calendar'
+import EventWrapper from "./EventWrapper";
 import Moment from 'moment';
 import { extendMoment } from 'moment-range';
+
+import './App.css';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const apiUrl = 'http://localhost:3001'
 const moment = extendMoment(Moment);
@@ -13,23 +15,14 @@ class App extends Component {
 
   state = {
     bookings: [],
-    groups: [],
-    items: []
+    events: [],
   }
-
-  groups = [];
-  items = []
-
 
   componentWillMount() {
     fetch(`${apiUrl}/bookings`)
       .then((response) => response.json())
       .then((bookings) => {
-        console.log(bookings);
         this.setBookings(bookings);
-        // this.setState({ bookings }, this.setBookings);
-      }).catch(err => {
-        console.log("Error Reading data " + err);
       })
   }
 
@@ -39,7 +32,7 @@ class App extends Component {
     reader.onload = function(e) {
       var bookings = [];
       var lines = reader.result.split("\n");
-      // Parse bookings from file
+      // Parse bookings from csv file
       for (var i=1; i<lines.length-1; i++) {
         var currentline = lines[i].split(",");
         bookings.push({
@@ -48,53 +41,54 @@ class App extends Component {
           userId: currentline[2],
         });
       }
-      // console.log(bookings);
       _this.setBookings(bookings);
     }
     reader.readAsText(files[0]);
   }
       
   setBookings(data) {
+    // console.log(data);
     var bookings = this.state.bookings;
-    var groups = this.state.groups;
-    var items = this.state.items;
-    data.map((booking, i) => {
-      const userId = parseInt(booking.userId);
-      const userTitle = 'User ' + booking.userId;
-      const duration = booking.duration / (60 * 1000);
-      const range = moment.range(moment(new Date(booking.time)), moment(new Date(booking.time)).add(duration, 'minute'));
+    var events = this.state.events;
+
+    data.forEach((booking, i) => {
+      const title = 'User' + parseInt(booking.userId, 10);
+      const start = new Date(booking.time);
+      const end = new Date(booking.time + booking.duration);
+      const range = moment.range(start, end);
 
       // check booking overlaps
       var is_overlap = false;
+      var type = ''
       for (var j=0; j<bookings.length; j++) {
-        const range2 = moment.range(moment(bookings[j].time), moment(bookings[j].time).add(duration, 'minute'));
+        const range2 = moment.range(moment(bookings[j].time), moment(bookings[j].time).add(booking.duration, 'millisecond'));
         if (range2.overlaps(range)) {
           is_overlap = true;
           break;
         }
       }
-      if (!is_overlap) {
+
+      if (is_overlap) {
+        type = 'overlap';
+      } else {
+        type = '';
         bookings.push(booking);
       }
 
-      for (var j=0; j<=i; j++) {
-        if (groups[j] && groups[j].title === userTitle) {
-          break;
-        }
-        groups.push({id: userId, title: userTitle});
-      }
-      items.push({
-        id: i, 
-        group: userId, 
-        title: userTitle + ' - ' + duration + ' Minutes' , 
-        start_time: moment(booking.time), 
-        end_time: moment(booking.time).add(duration, 'minute')
+      // Add Events
+      events.push({
+        id: events.length, 
+        title: title, 
+        start: start, 
+        end: end,
+        type: type
       })
     });
-    // console.log(bookings)
-    // console.log(groups)
-    // console.log(items)
-    this.setState({ bookings, groups, items });
+
+    // console.log(bookings);
+    // console.log(events);
+
+    this.setState({ bookings, events });
   }
 
   render() {
@@ -110,14 +104,14 @@ class App extends Component {
         </div>
         <div className="App-main">
           <p>Existing bookings:</p>
-          <div>
-            <Timeline 
-              groups={this.state.groups}
-              items={this.state.items}
-              defaultTimeStart={moment('01 Mar 2018 11:00:00')}
-              defaultTimeEnd={moment('06 Mar 2018 11:00:00')}
-            />
-          </div>
+          <BigCalendar
+            components={{eventWrapper: EventWrapper}}
+            events={this.state.events}
+            localizer={BigCalendar.momentLocalizer(moment)}
+            defaultView={BigCalendar.Views.WEEK}
+            views={['day', 'week']}
+            defaultDate={new Date('2019/06/02')}
+          />
           {
             (this.state.bookings || []).map((booking, i) => {
               const date = new Date(booking.time);
