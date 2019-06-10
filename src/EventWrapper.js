@@ -2,7 +2,17 @@ import React from "react";
 
 const EventWrapper = ({ event, children }) => {
   const { title, className, style } = children.props;
-  const customClass = `${className} rbc-event--${event.type}`;
+  var customClass = [className];
+
+  if(event.type === 'new') {
+    customClass.push('rbc-event--new');
+  }
+
+  if(event.overlap) {
+    customClass.push('rbc-event--overlap');
+  }
+  
+  customClass = customClass.join(' '); 
 
   return (
     <div

@@ -1,7 +1,1 @@
-[
-  { "time": "01 Jun 2019 11:00:00 GMT+1000", "duration": 180, "user_id": "0001" },
-  { "time": "02 Jun 2019 11:00:00 GMT+1000", "duration": 180, "user_id": "0001" },
-  { "time": "03 Jun 2019 11:00:00 GMT+1000", "duration": 180, "user_id": "0001" },
-  { "time": "04 Jun 2019 11:00:00 GMT+1000", "duration": 180, "user_id": "0001" },
-  { "time": "05 Jun 2019 11:00:00 GMT+1000", "duration": 180, "user_id": "0001" }
-]
+[{"time":"Sun Jun 02 2019 11:00:00 GMT+1000 (Australian Eastern Standard Time)","duration":180,"user_id":"0001"},{"time":"Mon Jun 03 2019 11:00:00 GMT+1000 (Australian Eastern Standard Time)","duration":180,"user_id":"0001"},{"time":"Tue Jun 04 2019 11:00:00 GMT+1000 (Australian Eastern Standard Time)","duration":120,"user_id":"0001"},{"time":"Wed Jun 05 2019 11:00:00 GMT+1000 (Australian Eastern Standard Time)","duration":60,"user_id":"0001"},{"time":"Thu Jun 06 2019 11:00:00 GMT+1000 (Australian Eastern Standard Time)","duration":200,"user_id":"0001"},{"time":"Mon Jun 03 2019 14:00:00 GMT+1000 (Australian Eastern Standard Time)","duration":180,"user_id":"0002\r"}]

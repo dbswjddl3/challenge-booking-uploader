@@ -10,20 +10,29 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const apiUrl = 'http://localhost:3001'
 const moment = extendMoment(Moment);
+const defaultDate = new Date('2019/06/03');
 
 class App extends Component {
 
-  state = {
-    bookings: [],
-    events: [],
+  constructor (props){
+    super(props);
+  
+    this.state = {
+      bookings: [],
+      events: [],
+    };
+  
+    this.update = this.update.bind(this);
+  
   }
-
+  
   componentWillMount() {
     fetch(`${apiUrl}/bookings`)
-      .then((response) => response.json())
-      .then((bookings) => {
-        this.setBookings(bookings);
-      })
+    .then((response) => response.json())
+    .then((bookings) => {
+      this.setBookings(bookings);
+    })
+    .catch((err) => ({ err }));
   }
 
   onDrop = (files) => {
@@ -38,7 +47,7 @@ class App extends Component {
         bookings.push({
           time: new Date(currentline[0]).getTime(),
           duration: currentline[1] * 60 * 1000,
-          userId: currentline[2],
+          user_id: "000" + currentline[2],
         });
       }
       _this.setBookings(bookings);
@@ -50,30 +59,28 @@ class App extends Component {
     // console.log(data);
     var bookings = this.state.bookings;
     var events = this.state.events;
+    var type = '';
+
+    if (events.length > 0) {
+      type = 'new';
+    }
 
     data.forEach((booking, i) => {
-      const title = 'User' + parseInt(booking.userId, 10);
+      const title = 'User' + parseInt(booking.user_id, 10);
       const start = new Date(booking.time);
       const end = new Date(booking.time + booking.duration);
       const range = moment.range(start, end);
 
       // check booking overlaps
-      var is_overlap = false;
-      var type = ''
-      for (var j=0; j<bookings.length; j++) {
-        const range2 = moment.range(moment(bookings[j].time), moment(bookings[j].time).add(booking.duration, 'millisecond'));
-        if (range2.overlaps(range)) {
-          is_overlap = true;
-          break;
+      var is_overlap = bookings.some((_booking, _i) => {
+        const _start = new Date(_booking.time);
+        const _end = moment(_start).add(_booking.duration, 'minute');
+        const _range = moment.range(_start, _end);
+        if (_range.overlaps(range)) {
+          return true;
         }
-      }
-
-      if (is_overlap) {
-        type = 'overlap';
-      } else {
-        type = '';
-        bookings.push(booking);
-      }
+        return false;
+      });
 
       // Add Events
       events.push({
@@ -81,14 +88,54 @@ class App extends Component {
         title: title, 
         start: start, 
         end: end,
-        type: type
+        type: type,
+        overlap: is_overlap,
       })
+
+      if (!is_overlap) {
+        bookings.push({
+          time: start.toString(),
+          duration: booking.duration / (60 * 1000),
+          user_id: booking.user_id,
+        });
+      }
     });
 
-    // console.log(bookings);
     // console.log(events);
+    // console.log(bookings);
 
-    this.setState({ bookings, events });
+    this.setState({ events,  bookings });
+  }
+
+  updateEvents(data) {
+    var events = [];
+    data.forEach((booking, i) => {
+      events.push({
+        id: events.length, 
+        title: 'User' + parseInt(booking.user_id, 10), 
+        start: new Date(booking.time), 
+        end: new Date(booking.time + booking.duration),
+      })
+    });
+    this.setState({ events }, () => {
+      alert('Bookings Updated!')
+    });
+  }
+
+  update = () => {
+    fetch(`${apiUrl}/bookings`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(this.state.bookings)
+    })
+    .then((response) => response.json())
+    .then((bookings) => {
+      this.updateEvents(bookings);
+    })
+    .catch((err) => ({ err }));
   }
 
   render() {
@@ -109,22 +156,10 @@ class App extends Component {
             events={this.state.events}
             localizer={BigCalendar.momentLocalizer(moment)}
             defaultView={BigCalendar.Views.WEEK}
-            views={['day', 'week']}
-            defaultDate={new Date('2019/06/02')}
+            views={['day', 'week', 'agenda']}
+            defaultDate={defaultDate}
           />
-          {
-            (this.state.bookings || []).map((booking, i) => {
-              const date = new Date(booking.time);
-              const duration = booking.duration / (60 * 1000);
-              return (
-                <p key={i} className="App-booking">
-                  <span className="App-booking-time">{date.toString()}</span>
-                  <span className="App-booking-duration">{duration.toFixed(1)}</span>
-                  <span className="App-booking-user">{booking.userId}</span>
-                </p>
-              )
-            })
-          }
+          <button className="btn-update-booking" type="button" onClick={this.update}>Update Bookings</button>
         </div>
       </div>
     );
