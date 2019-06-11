@@ -4,7 +4,7 @@ const EventWrapper = ({ event, children }) => {
   const { title, className, style } = children.props;
   var customClass = [className];
 
-  if(event.new) {
+  if(event.type === 'new') {
     customClass.push('rbc-event--new');
   }
 
@@ -12,10 +12,12 @@ const EventWrapper = ({ event, children }) => {
     customClass.push('rbc-event--overlap');
   }
   
+  customClass = customClass.join(' '); 
+
   return (
     <div
       title={title}
-      className={customClass.join(' ')}
+      className={customClass}
       style={style}
     >
       {children.props.children}

@@ -14,14 +14,14 @@ function getBookings() {
   .map((bookingRecord) => ({
     time: Date.parse(bookingRecord.time),
     duration: bookingRecord.duration * 60 * 1000, // mins into ms
-    userId: bookingRecord.user_id,
+    user_id: bookingRecord.user_id,
   }))
 }
 
 app.post('/bookings', (req, res) => {
   fs.writeFile(bookingFile, JSON.stringify(req.body), (err) => {
     if (err) {
-       res.status(500).jsonp({ error: 'Failed to Update' });
+       res.status(500).jsonp({ error: 'Failed to write file' });
     }
     const bookings = getBookings();
     res.send(bookings);

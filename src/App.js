@@ -19,114 +19,123 @@ class App extends Component {
   
     this.state = {
       bookings: [],
+      events: [],
     };
+  
+    this.update = this.update.bind(this);
+  
   }
   
-  componentDidMount() {
-    // Get existing Bookings from server
+  componentWillMount() {
     fetch(`${apiUrl}/bookings`)
     .then((response) => response.json())
     .then((bookings) => {
-      this.setBookings(bookings)
-    }).catch(() => {
-      alert('Error occurred: unable to retrieve data from server.');
-    });
+      this.setBookings(bookings);
+    })
+    .catch((err) => ({ err }));
   }
 
   onDrop = (files) => {
-    if (files.length === 0) {
-      alert("Please check the files.");
-      return;
-    }
-
-    const _this = this;
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        var bookings = [];
-        var lines = reader.result.split("\n");
-        // Parse bookings from csv file
-        for (var i=1; i<lines.length-1; i++) {
-          var currentline = lines[i].split(",");
-          bookings.push({
-            time: new Date(currentline[0]).getTime(),
-            duration: currentline[1] * 60 * 1000,
-            userId: "000" + currentline[2],
-          });
-        }
-        _this.setBookings(bookings);
-      }
-      reader.readAsText(file);
-    });
-  }
-  
-  getBookings() {
-    var bookings = [];
-    this.state.bookings.forEach((booking) => {
-      if (!booking.overlap) {
+    var reader = new FileReader();
+    var _this = this;
+    reader.onload = function(e) {
+      var bookings = [];
+      var lines = reader.result.split("\n");
+      // Parse bookings from csv file
+      for (var i=1; i<lines.length-1; i++) {
+        var currentline = lines[i].split(",");
         bookings.push({
-          time: new Date(booking.start).toString(),
-          duration: booking.duration,
-          user_id: booking.user_id,
+          time: new Date(currentline[0]).getTime(),
+          duration: currentline[1] * 60 * 1000,
+          user_id: "000" + currentline[2],
         });
       }
-    });
-    return bookings;
+      _this.setBookings(bookings);
+    }
+    reader.readAsText(files[0]);
   }
-
+      
   setBookings(data) {
+    // console.log(data);
     var bookings = this.state.bookings;
-    var is_new = (bookings.length > 0) ? true : false;
+    var events = this.state.events;
+    var type = '';
 
-    data.forEach((booking) => {
+    if (events.length > 0) {
+      type = 'new';
+    }
+
+    data.forEach((booking, i) => {
+      const title = 'User' + parseInt(booking.user_id, 10);
       const start = new Date(booking.time);
       const end = new Date(booking.time + booking.duration);
       const range = moment.range(start, end);
 
-      // Check booking overlaps
-      const is_overlap = bookings.some((_booking, _i) => {
-        const _range = moment.range(_booking.start, _booking.end);
+      // check booking overlaps
+      var is_overlap = bookings.some((_booking, _i) => {
+        const _start = new Date(_booking.time);
+        const _end = moment(_start).add(_booking.duration, 'minute');
+        const _range = moment.range(_start, _end);
         if (_range.overlaps(range)) {
           return true;
         }
         return false;
       });
 
-      // Add bookings
-      bookings.push({
-        id: bookings.length, 
+      // Add Events
+      events.push({
+        id: events.length, 
+        title: title, 
         start: start, 
         end: end,
-        title: 'User' + parseInt(booking.userId, 10), 
-        new: is_new,
+        type: type,
         overlap: is_overlap,
-        user_id: booking.userId, 
-        duration: booking.duration / (60 * 1000),
       })
+
+      if (!is_overlap) {
+        bookings.push({
+          time: start.toString(),
+          duration: booking.duration / (60 * 1000),
+          user_id: booking.user_id,
+        });
+      }
     });
 
-    this.setState({ bookings });
+    // console.log(events);
+    // console.log(bookings);
+
+    this.setState({ events,  bookings });
   }
 
-  updateBookings = () => {
-    var bookings = this.getBookings();
+  updateEvents(data) {
+    var events = [];
+    data.forEach((booking, i) => {
+      events.push({
+        id: events.length, 
+        title: 'User' + parseInt(booking.user_id, 10), 
+        start: new Date(booking.time), 
+        end: new Date(booking.time + booking.duration),
+      })
+    });
+    this.setState({ events }, () => {
+      alert('Bookings Updated!')
+    });
+  }
+
+  update = () => {
     fetch(`${apiUrl}/bookings`, {
       method: 'POST',
-      body: JSON.stringify(bookings),
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify(this.state.bookings)
     })
     .then((response) => response.json())
     .then((bookings) => {
-      this.setState({ bookings: [] }, () => {
-        this.setBookings(bookings);
-        alert('Bookings successfully updated!');
-      });
-    }).catch((e) => {
-      alert('Error occurred: '+e);
-    });
+      this.updateEvents(bookings);
+    })
+    .catch((err) => ({ err }));
   }
 
   render() {
@@ -144,13 +153,13 @@ class App extends Component {
           <p>Existing bookings:</p>
           <BigCalendar
             components={{eventWrapper: EventWrapper}}
-            events={this.state.bookings}
+            events={this.state.events}
             localizer={BigCalendar.momentLocalizer(moment)}
-            defaultDate={defaultDate}
             defaultView={BigCalendar.Views.WEEK}
             views={['day', 'week', 'agenda']}
+            defaultDate={defaultDate}
           />
-          <button className="btn-update-booking" type="button" onClick={this.updateBookings}>Update Bookings</button>
+          <button className="btn-update-booking" type="button" onClick={this.update}>Update Bookings</button>
         </div>
       </div>
     );
