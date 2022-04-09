@@ -8,7 +8,7 @@
     "express": "^4.16.3",
     "interact.js": "^1.2.8",
     "interactjs": "^1.4.6",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "moment-range": "^4.0.2",
     "prop-types": "^15.7.2",
     "react": "^16.8.6",
